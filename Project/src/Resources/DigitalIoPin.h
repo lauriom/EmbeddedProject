@@ -15,8 +15,8 @@ private:
 	int port,pin;
 	bool invert;
 public:
-	DigitalIoPin(int Port, int Pin, bool Input, bool Pullup, bool Invert);
-	~DigitalIoPin();
+	DigitalIoPin(int Port, int Pin, bool Input, bool Pullup = false, bool Invert = false);
+	virtual ~DigitalIoPin();
 	//functions
 	void flipOutput();
 	void write(bool b);

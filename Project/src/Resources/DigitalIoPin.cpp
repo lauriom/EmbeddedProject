@@ -7,7 +7,7 @@
 
 #include "DigitalIoPin.h"
 
-DigitalIoPin::DigitalIoPin(int Port, int Pin, bool Input, bool Pullup = false, bool Invert = false)
+DigitalIoPin::DigitalIoPin(int Port, int Pin, bool Input, bool Pullup, bool Invert)
 :port(Port),pin(Pin),invert(Invert){
 	if(Input){ // sets settings
 		LPC_IOCON->PIO[port][pin] = ((Pullup ? IOCON_MODE_PULLUP : 0x0) | IOCON_DIGMODE_EN | (Invert ? IOCON_INV_EN : 0x0));
