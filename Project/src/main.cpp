@@ -32,7 +32,7 @@ int main(void) {
     // functions related to the board hardware
     Board_Init();
     // Set the LED to the state of "On"
-    Board_LED_Set(0, true);
+
 #endif
 #endif
 
