@@ -18,9 +18,7 @@
 
 #include <cr_section_macros.h>
 
-// TODO: insert other include files here
-
-// TODO: insert other definitions and declarations here
+// joo
 
 int main(void) {
 
