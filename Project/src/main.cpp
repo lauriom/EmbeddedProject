@@ -19,6 +19,7 @@
 #include <cr_section_macros.h>
 
 // TODO: insert other include files here
+#include "Resources/DigitalIoPin.h"
 
 // TODO: insert other definitions and declarations here
 
@@ -32,7 +33,7 @@ int main(void) {
     // functions related to the board hardware
     Board_Init();
     // Set the LED to the state of "On"
-
+    Board_LED_Set(0, true);
 #endif
 #endif
 
