@@ -777,7 +777,7 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
   MBSerial->flush();    // flush transmit buffer
 
   // loop until we run out of time or bytes, or an error occurs
-  u32StartTime = millis;
+  u32StartTime = millis();
   while (u8BytesLeft && !u8MBStatus)
   {
     if (MBSerial->available())
@@ -852,7 +852,7 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
           break;
       }
     }
-    if ((millis - u32StartTime) > ku16MBResponseTimeout)
+    if ((millis() - u32StartTime) > ku16MBResponseTimeout)
     {
       u8MBStatus = ku8MBResponseTimedOut;
     }

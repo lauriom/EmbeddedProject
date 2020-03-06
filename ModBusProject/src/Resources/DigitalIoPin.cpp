@@ -42,13 +42,13 @@ volatile bool DigitalIoPin::read(){
 /**
  * @brief Same as write
  */
-void DigitalIoPin::operator=(const bool b){
+inline void DigitalIoPin::operator=(const bool b){
 	write(b);
 }
 /**
  * @brief Same as read
  */
-DigitalIoPin::operator bool(){
+inline DigitalIoPin::operator bool(){
 	return read();
 }
 

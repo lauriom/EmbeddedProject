@@ -5,10 +5,7 @@
  *      Author: Lauri
  */
 
-
-
 #include "board.h"
-
 
 class DigitalIoPin {
 private:
@@ -22,6 +19,6 @@ public:
 	void write(bool b);
 	volatile bool read();
 	// operator overloads
-	void operator=(const bool b);
-	operator bool();
+	inline void operator=(const bool b);
+	inline operator bool();
 };

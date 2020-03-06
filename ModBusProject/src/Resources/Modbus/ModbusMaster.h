@@ -57,7 +57,7 @@ Set to 1 to enable debugging features within class:
 #include <cstddef>
 #endif
 
-uint32_t millis;
+uint32_t millis();
 #define BYTE 0xA5
 
 /* _____UTILITY MACROS_______________________________________________________ */
