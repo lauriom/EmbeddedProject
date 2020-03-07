@@ -10,6 +10,7 @@
 PressureSensor::PressureSensor() {
 	// TODO Auto-generated constructor stub
 
+
 }
 
 PressureSensor::~PressureSensor() {
@@ -27,6 +28,7 @@ void PressureSensor::Readi2c(uint8_t devAddr,
 		uint16_t txSize,
 		uint8_t *rxBuffPtr,
 		uint16_t rxSize){
+	I2CM_XFER_T  i2cmXferRec; //not used in other functions
 	i2cmXferRec.slaveAddr = devAddr;
 	i2cmXferRec.status = 0;
 	i2cmXferRec.txSz = txSize;

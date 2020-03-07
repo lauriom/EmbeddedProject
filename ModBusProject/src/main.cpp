@@ -21,7 +21,13 @@
 #include "Resources/RingBuffer.h"
 #include "Resources/Fan.h"
 #include "Resources/PressureSensor.h"
-#include<atomic>
+#include <atomic>
+#include <cr_section_macros.h>
+
+#define I2C_MODE (0)
+#define I2C_BITRATE (100000)
+#define I2C_CLK_DIVIDER (1300)
+#define TICKRATE_HZ1 (1000)
 
 #define ever ;;
 
@@ -113,12 +119,7 @@ static void initPinIrq(){
 	Sleep(10);
 }
 
-#include <cr_section_macros.h>
 
-// TODO: insert other include files here
-
-// TODO: insert other definitions and declarations here
-#define TICKRATE_HZ1 1000
 int main(void) {
 
 #if defined (__USE_LPCOPEN)
@@ -143,9 +144,19 @@ int main(void) {
 
 	LiquidCrystal lcd = LiquidCrystal(&rs, &en, &d4, &d5, &d6, &d7);
 	MainController menu(&lcd);
+//
+//	Init_I2C_PinMux();
+	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 22, IOCON_DIGMODE_EN |I2C_MODE);
+	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 23, IOCON_DIGMODE_EN |I2C_MODE);
+	Chip_SWM_EnableFixedPin(SWM_FIXED_I2C0_SCL);
+	Chip_SWM_EnableFixedPin(SWM_FIXED_I2C0_SDA);
 
-	Init_I2C_PinMux();
-	setupI2CMaster();
+//	setupI2CMaster();
+	Chip_I2C_Init(LPC_I2C0);
+	Chip_I2C_SetClockDiv(LPC_I2C0, I2C_CLK_DIVIDER);
+	Chip_I2CM_SetBusSpeed(LPC_I2C0, I2C_BITRATE);
+	Chip_I2CM_Enable(LPC_I2C0);
+
 	NVIC_DisableIRQ(I2C0_IRQn);
 
 	LpcPinMap none = {-1, -1}; // unused pin has negative values in it
@@ -167,7 +178,7 @@ int main(void) {
 
 	//initPinIrq();
 
-	int buf;
+	//int buf = 0;
 	for(ever){
 
 		while (1) {

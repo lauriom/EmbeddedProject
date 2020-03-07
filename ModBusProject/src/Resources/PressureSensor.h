@@ -10,7 +10,7 @@
 
 #include <cstdint>
 #include "board.h"
-static I2CM_XFER_T  i2cmXferRec;
+
 class PressureSensor {
 public:
 	PressureSensor();
