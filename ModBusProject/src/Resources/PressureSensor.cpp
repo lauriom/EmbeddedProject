@@ -18,10 +18,17 @@ PressureSensor::~PressureSensor() {
 }
 
 int16_t PressureSensor::readSensorData() {
+	uint8_t cmdcode = 0xf1; //not needed as private members if data isn't saved
+	uint8_t data[3];
 	Readi2c(0x40, &cmdcode, 1, data, 3);
-	result = (data[0] << 8);
-	result += data[1];
-	return result;
+	return (data[0] << 8) | data[1];;
+}
+
+int PressureSensor::readPressureInPa() {
+	int16_t rawData = readSensorData();
+
+	return rawData / 240; //rounded. Float precision not needed. Scale factor 240. Max signed 16bit 32767 / 240 = 136 Pa theoretically
+
 }
 void PressureSensor::Readi2c(uint8_t devAddr,
 		uint8_t *txBuffPtr,

@@ -16,15 +16,12 @@ public:
 	PressureSensor();
 	~PressureSensor();
 	int16_t readSensorData();
+	int readPressureInPa();
 	void Readi2c(uint8_t,
 			uint8_t *,
 			uint16_t ,
 			uint8_t *,
 			uint16_t);
-private:
-	uint8_t cmdcode = 0xf1;
-	int16_t result;
-	uint8_t data[3];
 };
 
 
