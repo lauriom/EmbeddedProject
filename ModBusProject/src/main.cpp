@@ -21,6 +21,7 @@
 #include "Resources/RingBuffer.h"
 #include "Resources/Fan.h"
 #include "Resources/PressureSensor.h"
+#include "Resources/Watchdog.h"
 #include <atomic>
 #include <cr_section_macros.h>
 
@@ -133,8 +134,9 @@ int main(void) {
 #endif
 #endif
 	SysTick_Config(Chip_Clock_GetSysTickClockRate() / TICKRATE_HZ1);
-
 	Chip_RIT_Init(LPC_RITIMER);
+	Watchdog watchdog(10); //reset time 10 secs
+
 	DigitalIoPin rs = DigitalIoPin(0,8,false,false,false);
 	DigitalIoPin en = DigitalIoPin(1,6,false,false,false);
 	DigitalIoPin d4 = DigitalIoPin(1,8,false,false,false);
@@ -198,13 +200,12 @@ int main(void) {
 			if (cnnt >= 100) {
 				cnnt = 0;
 
-
-
 			}
 			/*while((buf = buffer->get()) != 0){// handle interupt events from fifo ringbuf
 			menu.eventHandler(buf);
 		}*/
 
+			watchdog.feed();
 		}
 	}
 
