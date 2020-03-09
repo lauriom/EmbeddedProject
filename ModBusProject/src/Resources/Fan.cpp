@@ -45,7 +45,7 @@ bool Fan::setFrequency(uint16_t freq)
 	ctr = 0;
 	atSetpoint = false;
 	do {
-		for(int i = 0 ; i < 7200000; i++);
+
 		result = Status;
 		// check if we are at setpoint
 		if (result >= 0 && (result & 0x0100)) atSetpoint = true;

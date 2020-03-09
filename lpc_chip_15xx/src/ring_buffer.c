@@ -29,7 +29,7 @@
  * this code.
  */
 
-#include <string.h>
+//#include <string.h>
 #include "ring_buffer.h"
 
 /*****************************************************************************
