@@ -117,7 +117,7 @@ int main(void) {
 	// Set up and initialize all required blocks and
 	// functions related to the board hardware
 	Board_Init();
-	// Set the LED to the state of "On"
+
 #endif
 #endif
 	SysTick_Config(Chip_Clock_GetSysTickClockRate() / TICKRATE_HZ1);
@@ -164,16 +164,16 @@ int main(void) {
 
 	int updateCounter = 10;
 	while(1) {
-		if(updateCounter++ == 10){ // updates at start, then 5 times a sec
+		if(updateCounter++ == 10){
 			controller.updateMenu();
 			updateCounter = 0;
 		}
 		controller.run();
-		Sleep(10);
+		Sleep(5);
 		watchdog.feed();
 	}
 
-	delete buffer;
+	delete buffer; // shouldnt happen
 	return 0 ;
 }
 

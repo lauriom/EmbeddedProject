@@ -10,11 +10,11 @@
 DigitalIoPin::DigitalIoPin(int Port, int Pin, bool Input, bool Pullup, bool Invert)
 :port(Port),pin(Pin),invert(Invert){
 	if(Input){ // sets settings
-		LPC_IOCON->PIO[port][pin] = ((Pullup ? IOCON_MODE_PULLUP : 0x0) | IOCON_DIGMODE_EN | (Invert ? IOCON_INV_EN : 0x0));
-		LPC_GPIO->DIR[port] &= ~(1UL << pin); // sets as input
+		Chip_IOCON_PinMuxSet (LPC_IOCON,port,pin,(Pullup ? IOCON_MODE_PULLUP : 0x0) | IOCON_DIGMODE_EN | (Invert ? IOCON_INV_EN : 0x0));
+		Chip_GPIO_SetPinDIRInput(LPC_GPIO,port,pin); // sets as input
 	}else{
-		LPC_IOCON->PIO[port][pin] = (IOCON_MODE_INACT | IOCON_DIGMODE_EN);
-		LPC_GPIO->DIR[port] |= 1UL << pin; // sets as output
+		Chip_IOCON_PinMuxSet (LPC_IOCON,port,pin,(Pullup ? IOCON_MODE_PULLUP : 0x0) | IOCON_DIGMODE_EN);
+		Chip_GPIO_SetPinDIROutput(LPC_GPIO,port,pin); // sets as output
 	}
 };
 
@@ -23,21 +23,22 @@ DigitalIoPin::~DigitalIoPin() {
 }
 /**
  * @brief flips value of pin b = !b
- */
+ UNUSED
 void DigitalIoPin::flipOutput(){
 	LPC_GPIO->B[port][pin] = !LPC_GPIO->B[port][pin];
 }
+ */
 /**
- * @brief Sets bool to pin. Will invert if invert set to true in onstructor
+ * @brief Sets bool to pin. Will invert if invert set to true in constructor
  */
 void DigitalIoPin::write(bool b){
-	LPC_GPIO->B[port][pin] = (invert) ? !b : b;
+	Chip_GPIO_SetPinState(LPC_GPIO,port,pin, (invert) ? !b : b);
 }
 /**
  * @brief Returns volatile value of pin
  */
 volatile bool DigitalIoPin::read(){
-	return LPC_GPIO->B[port][pin];
+	return Chip_GPIO_GetPinState(LPC_GPIO,port,pin);
 }
 /**
  * @brief Same as write

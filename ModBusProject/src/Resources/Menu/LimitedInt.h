@@ -16,13 +16,15 @@ public:
 
 	LimitedInt operator++();
 	LimitedInt operator--();
-	LimitedInt operator++(int const );
+	LimitedInt operator++(int const);
 	LimitedInt operator--(int const);
 	operator int() const;
 	bool operator ==(int const);
 	LimitedInt operator=(int const);
-	LimitedInt operator+(int const);
-	LimitedInt operator-(int);
+	LimitedInt operator+=(int const);
+	LimitedInt operator-=(int const);
+	int operator-(int const);
+	int operator+(int const);
 private:
 	int val;
 	int min,max;

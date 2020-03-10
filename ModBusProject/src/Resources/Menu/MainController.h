@@ -20,7 +20,7 @@
 #define ButtonRight 1
 #define ButtonMid 2
 #define ButtonLeft 3
-#define ButtonTimeout 4
+
 
 const int MAX_FAN_SPEED = 20000;
 const int MIN_FAN_SPEED = 2000;
@@ -32,7 +32,7 @@ const int PRES_DIFF_MAX_STEP = 60; //pressure diff when max fan speed step is us
 const int PRES_MAX = 120; // pressure upper range
 const int PRES_MIN = 0; // pressure lower range
 /*
- * Controller for program, reads sensor runs fan and updates ui
+ * Controller for program, reads sensor runs fan and updates Ui
  */
 class MainController {
 public:
@@ -51,16 +51,15 @@ private: // updates menu values
 	RingBuffer *buffer;
 
 	// Values of sensors
-	bool autoMode = true; // controls mode
-	bool errorState = false; // true if desired pressure wont be reached
 	int fanFreq = 0; // frequency of fan
 	int paResult; // pressure in pascals
 
-	int step = 200; // initial size of adjust for fanspeed
-	int targetPressure = 20;
-	int targetSpeedInPercent = 50;
-	//LimitedInt targetPressure(20,0,120); // target pascal pressure, range 0-120
-	//LimitedInt targetSpeedInPercent(30,0,100);// Manual fan speed in 0-100%
+	bool autoMode = true; // controls state
+	bool errorState = false; // true if desired pressure wont be reached
+
+	int step = 200; // initial size of fanspeed increment
+	LimitedInt targetPressure = LimitedInt(20,0,120); // target pascal pressure, range 0-120
+	LimitedInt targetSpeedInPercent = LimitedInt(30,0,100);// Manual fan speed in 0-100%
 
 
 

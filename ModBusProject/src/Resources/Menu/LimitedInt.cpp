@@ -20,14 +20,14 @@ void LimitedInt::setLims(int Min, int Max){
 }
 
 LimitedInt LimitedInt::operator++(){
-	if ((val + 1) < max){
+	if ((val + 1) <= max){
 		++val;
 	}
 	return *this;
 
 }
 LimitedInt LimitedInt::operator--(){
-	if ((val - 1) > min){
+	if ((val - 1) >= min){
 		--val;
 	}
 	return *this;
@@ -35,6 +35,7 @@ LimitedInt LimitedInt::operator--(){
 LimitedInt LimitedInt::operator++(int){
 	LimitedInt buf = *this;
 	this->operator ++();
+	*this = buf;
 	return buf;
 }
 LimitedInt LimitedInt::operator--(int){
@@ -57,12 +58,13 @@ LimitedInt LimitedInt::operator=(int i){
 		val = i;
 	}else if(i > max){
 		val = max;
-	}else if(i < min){
+	}else/* if(i < min)*/{
 		val = min;
 	}
 	return *this;
 }
-LimitedInt LimitedInt::operator+(int i){
+
+LimitedInt LimitedInt::operator+=(int i){
 	if((val + i) < max){
 		val += i;
 	}else{
@@ -70,7 +72,7 @@ LimitedInt LimitedInt::operator+(int i){
 	}
 	return *this;
 }
-LimitedInt LimitedInt::operator-(int i){
+LimitedInt LimitedInt::operator-=(int i){
 	if((val - i) > min){
 		val -= i;
 	}else{
@@ -78,4 +80,11 @@ LimitedInt LimitedInt::operator-(int i){
 	}
 	return *this;
 }
+int LimitedInt::operator+(int i){
+	return val+i;
+}
+int LimitedInt::operator-(int i){
+	return val-i;
+}
+
 

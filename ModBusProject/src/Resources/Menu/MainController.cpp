@@ -105,27 +105,33 @@ int MainController::remapRange (int val, int iMin, int iMax, int oMin, int oMax)
 	return int((oMax - oMin) * valFraction) + oMin; //find where the float would be on the output range
 }
 void MainController::run(){
+	static int noPressureDiffCounter = 0; // counts cycles pressure is not reached
+
 	paResult = ps->readPressureInPa();
+
+	errorState = false;
 	if (autoMode) {
 		int pressureDiff = abs(targetPressure - paResult);
 
-		printf("Auto mode. Pa result: %d\n", paResult);
+		if(pressureDiff > 10){
+			if (noPressureDiffCounter++ > 1000){ //
+				errorState = true;
+			}
+		}else{
+			noPressureDiffCounter = 0;
+		}
+
+		//DEBUGOUT("Auto mode. Pa result: %d\n", paResult);
 
 		if (pressureDiff > (0.25 * PRES_MAX)) {
-
 			step = remapRange(pressureDiff, PRES_DIFF_MIN_STEP, PRES_DIFF_MAX_STEP, FAN_SPEED_MIN_STEP, FAN_SPEED_MAX_STEP);
-
 		}
-
 		else {
-
 			step = FAN_SPEED_STEP;
-
 		}
+		//DEBUGOUT("Step is %d\n", step);
 
-		printf("Step is %d\n", step);
-
-		if (paResult < targetPressure) { //adjusting pressure could be improved
+		if (paResult < targetPressure) {
 			fanFreq += step;
 		}
 
@@ -143,7 +149,8 @@ void MainController::run(){
 		int targetFrequency = remapRange(targetSpeedInPercent, 0, 100, MIN_FAN_SPEED, MAX_FAN_SPEED);
 
 		fan->setFrequency(targetFrequency);
-		printf("Manual mode. Pa result: %d\n", paResult);
+
+		//DEBUGOUT("Manual mode. Pa result: %d\n", paResult);
 
 	}
 }
