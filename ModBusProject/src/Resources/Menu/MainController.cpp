@@ -36,14 +36,14 @@ void MainController::updateMenu(){
 	lcd->setCursor(5,1);
 	if(autoMode){
 		lcd->print("P ");
-		lcd->print("Auto");
+		lcd->print("Auto  ");
 		lcd->setCursor(1,1);
 		str = std::to_string(targetPressure);
 		lcd->print(str);
 		lcd->print(" ");
 
 	}else{
-		str = std::to_string(targetSpeedInPercent);
+
 		lcd->print("% ");
 		lcd->print("Manual");
 		lcd->setCursor(1,1);
@@ -114,7 +114,7 @@ void MainController::run(){
 		int pressureDiff = abs(targetPressure - paResult);
 
 		if(pressureDiff > 10){
-			if (noPressureDiffCounter++ > 1000){ //
+			if (noPressureDiffCounter++ > 100){
 				errorState = true;
 			}
 		}else{
