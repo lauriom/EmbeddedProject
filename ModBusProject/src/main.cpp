@@ -33,7 +33,7 @@
 
 static volatile std::atomic_int timeout;
 static volatile std::atomic_int counter;
-static RingBuffer *buffer; // initialized before pinInterupt is enabled
+RingBuffer *buffer; // initialized before pinInterupt is enabled
 
 #ifdef __cplusplus
 extern"C"{
@@ -44,21 +44,21 @@ extern"C"{
 void SysTick_Handler(void){
 	if(counter > 0) --counter;
 
-	if(timeout++ == 10000){
+	if(++timeout == 10000){
 		//	buffer->add(ButtonTimeout);
 	}
 }
-void PIN_INT0_IRQHandler(){ // menu Right button
+void PIN_INT0_IRQHandler(){ // menu Left button
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(0));
-	buffer->add(ButtonRight);
+	buffer->add(ButtonLeft);
 }
 void PIN_INT1_IRQHandler(){ // menu Middle button
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(1));
 	buffer->add(ButtonMid);
 }
-void PIN_INT2_IRQHandler(){ // menu Left button
+void PIN_INT2_IRQHandler(){ // menu Right button
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(2));
-	buffer->add(ButtonLeft);
+	buffer->add(ButtonRight);
 }
 #ifdef __cplusplus
 }
@@ -92,21 +92,10 @@ static void initPinIrq(){
 	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 9, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN |IOCON_INV_EN));
 	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 10, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN|IOCON_INV_EN));
 
-	Chip_PININT_DisableIntHigh(LPC_GPIO_PIN_INT, PININTCH(0));
-	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(0));
-	Chip_PININT_SetPinModeEdge(LPC_GPIO_PIN_INT, PININTCH(0));
-	Chip_PININT_EnableIntLow(LPC_GPIO_PIN_INT, PININTCH(0));
-
-	Chip_PININT_DisableIntHigh(LPC_GPIO_PIN_INT, PININTCH(1));
-	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(1));
-	Chip_PININT_SetPinModeEdge(LPC_GPIO_PIN_INT, PININTCH(1));
-	Chip_PININT_EnableIntLow(LPC_GPIO_PIN_INT, PININTCH(1));
-
-	Chip_PININT_DisableIntHigh(LPC_GPIO_PIN_INT, PININTCH(2));
-	Chip_PININT_EnableIntLow(LPC_GPIO_PIN_INT, PININTCH(2));
-	Chip_PININT_SetPinModeEdge(LPC_GPIO_PIN_INT, PININTCH(2));
-	Chip_PININT_EnableIntLow(LPC_GPIO_PIN_INT, PININTCH(2));
-
+	Chip_PININT_DisableIntHigh(LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
+	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
+	Chip_PININT_SetPinModeEdge(LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
+	Chip_PININT_EnableIntLow(LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
 
 	NVIC_ClearPendingIRQ(PIN_INT0_IRQn);
 	NVIC_EnableIRQ(PIN_INT0_IRQn);
@@ -172,11 +161,18 @@ int main(void) {
 	MainController controller(&lcd,&p,&fan,buffer); // Init controller
 	initPinIrq();// starts pin interupts
 	Watchdog watchdog(10); //reset time 10 secs
+
+	int updateCounter = 10;
 	while(1) {
+		if(updateCounter++ == 10){ // updates at start, then 5 times a sec
+			controller.updateMenu();
+			updateCounter = 0;
+		}
 		controller.run();
-		Sleep(100);
+		Sleep(10);
 		watchdog.feed();
 	}
+
 	delete buffer;
 	return 0 ;
 }

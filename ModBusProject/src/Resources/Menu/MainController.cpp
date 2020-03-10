@@ -11,6 +11,7 @@
 MainController::MainController(LiquidCrystal* screen,PressureSensor* psen,Fan* f,RingBuffer* buf):
 lcd(screen),ps(psen),fan(f),buffer(buf) {
 	fan->startFan(); // initialies fan
+	paResult = ps->readPressureInPa();
 }
 
 MainController::~MainController() {
@@ -18,32 +19,70 @@ MainController::~MainController() {
 }
 
 void MainController::updateMenu(){
-	std::string row1;
-	row1.append(std::to_string(paResult));
+	menuEventHandler();
+	std::string str;
+	lcd->setCursor(7,0); // leaves 1 space empty
+	lcd->print(errorState ? "Error" :"OK   ");
+
+
+
+	str = std::to_string(paResult);
 	lcd->setCursor(1,0); // leaves 1 space empty
-	lcd->print(row1);
+	lcd->print(str);
+	lcd->print("  ");
+	lcd->setCursor(4,0);
+	lcd->print(" P");
+
+	lcd->setCursor(5,1);
+	if(autoMode){
+		lcd->print("P ");
+		lcd->print("Auto");
+		lcd->setCursor(1,1);
+		str = std::to_string(targetPressure);
+		lcd->print(str);
+		lcd->print(" ");
+
+	}else{
+		str = std::to_string(targetSpeedInPercent);
+		lcd->print("% ");
+		lcd->print("Manual");
+		lcd->setCursor(1,1);
+		str = std::to_string(targetSpeedInPercent);
+		lcd->print(str);
+		lcd->print(" ");
+
+	}
 }
 
-void MainController::menuEventHandler(int event){
-
-
-	switch(event){
-	case 1:
-		//up
-		break;
-	case 2:
-		//mid
-		break;
-	case 3:
-		// down
-		break;
-	case 4:
-		//turn off screen
-		break;
-	case 0:
-	default:
-		break;
+void MainController::menuEventHandler(){
+	int event;
+	while((event = buffer->get()) != 0){
+		switch(event){
+		case 1:
+			if (autoMode){
+				++targetPressure;
+			}else{
+				++targetSpeedInPercent;
+			}
+			//up
+			break;
+		case 2:
+			autoMode = !autoMode;
+			break;
+		case 3:
+			if (autoMode){
+				--targetPressure;
+			}else{
+				--targetSpeedInPercent;
+			}
+			break;
+		case 0:
+		default:
+			break;
+		}
 	}
+	int pressureDiff = abs(targetPressure - paResult);
+	step = remapRange(pressureDiff, PRES_DIFF_MIN_STEP, PRES_DIFF_MAX_STEP, FAN_SPEED_MIN_STEP, FAN_SPEED_MAX_STEP);
 }
 /*
  * to clamp values to ranges
@@ -66,31 +105,37 @@ int MainController::remapRange (int val, int iMin, int iMax, int oMin, int oMax)
 	return int((oMax - oMin) * valFraction) + oMin; //find where the float would be on the output range
 }
 void MainController::run(){
-
+	paResult = ps->readPressureInPa();
 	if (autoMode) {
-
-		paResult = ps->readPressureInPa();
+		int pressureDiff = abs(targetPressure - paResult);
 
 		printf("Auto mode. Pa result: %d\n", paResult);
 
-		if (paResult != targetPressure) {
+		if (pressureDiff > (0.25 * PRES_MAX)) {
 
-			int pressureDiff = abs(targetPressure - paResult);
-			int step = remapRange(pressureDiff, PRES_DIFF_MIN_STEP, PRES_DIFF_MAX_STEP, FAN_SPEED_MIN_STEP, FAN_SPEED_MAX_STEP);
-			printf("Step is %d\n", step);
+			step = remapRange(pressureDiff, PRES_DIFF_MIN_STEP, PRES_DIFF_MAX_STEP, FAN_SPEED_MIN_STEP, FAN_SPEED_MAX_STEP);
 
-			if (paResult < targetPressure) { //adjusting pressure could be improved
-				fanFreq += step;
-			}
-
-			if (paResult > targetPressure) {
-				fanFreq -= step;
-			}
-
-			fanFreq = clamp(fanFreq, MIN_FAN_SPEED, MAX_FAN_SPEED); //keep within range
 		}
 
+		else {
+
+			step = FAN_SPEED_STEP;
+
+		}
+
+		printf("Step is %d\n", step);
+
+		if (paResult < targetPressure) { //adjusting pressure could be improved
+			fanFreq += step;
+		}
+
+		if (paResult > targetPressure) {
+			fanFreq -= step;
+		}
+
+		fanFreq = clamp(fanFreq, MIN_FAN_SPEED, MAX_FAN_SPEED); //keep within range
 		fan->setFrequency(fanFreq);
+
 	}
 
 	else { //manual mode
@@ -101,6 +146,5 @@ void MainController::run(){
 		printf("Manual mode. Pa result: %d\n", paResult);
 
 	}
-	updateMenu();
 }
 
