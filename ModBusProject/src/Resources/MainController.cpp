@@ -8,7 +8,7 @@
 #include "MainController.h"
 
 
-MainController::MainController(LiquidCrystal* screen,PressureSensor* psen,Fan* f,RingBuffer* buf):
+MainController::MainController(LiquidCrystal* screen,PressureSensor* psen,Fan* f,RINGBUFF_T* buf):
 lcd(screen),ps(psen),fan(f),buffer(buf) {
 	fan->startFan(); // initialies fan
 	paResult = ps->readPressureInPa();
@@ -55,8 +55,9 @@ void MainController::updateMenu(){
 }
 
 void MainController::menuEventHandler(){
-	int event;
-	while((event = buffer->get()) != 0){
+	int event = 0;
+
+	while(RingBuffer_Pop(buffer,&event)){
 		switch(event){
 		case 1:
 			if (autoMode){
@@ -105,7 +106,6 @@ int MainController::remapRange (int val, int iMin, int iMax, int oMin, int oMax)
 	return int((oMax - oMin) * valFraction) + oMin; //find where the float would be on the output range
 }
 void MainController::run(){
-	static int noPressureDiffCounter = 0; // counts cycles pressure is not reached
 
 	paResult = ps->readPressureInPa();
 
@@ -113,9 +113,9 @@ void MainController::run(){
 	if (autoMode) {
 		int pressureDiff = abs(targetPressure - paResult);
 
-		if(pressureDiff > 10){
+		if(pressureDiff > ErrorStateTriggerDist){
 			if (noPressureDiffCounter++ > 100){
-				errorState = true;
+				errorState = true;// if not near desired pressure in 100 cycles, trigget error
 			}
 		}else{
 			noPressureDiffCounter = 0;
@@ -139,7 +139,6 @@ void MainController::run(){
 			fanFreq -= step;
 		}
 
-		fanFreq = clamp(fanFreq, MIN_FAN_SPEED, MAX_FAN_SPEED); //keep within range
 		fan->setFrequency(fanFreq);
 
 	}

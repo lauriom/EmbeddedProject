@@ -15,13 +15,15 @@
 #include "board.h"
 #endif
 #endif
-#include "Resources/Menu/MainController.h"
-#include "Resources/Menu/LiquidCrystal.h"
-#include "Resources/Modbus/LpcUart.h"
-#include "Resources/Menu/RingBuffer.h"
+#include "Resources/MainController.h"
+#include "Resources/Watchdog.h"
 #include "Resources/Fan.h"
 #include "Resources/PressureSensor.h"
-#include "Resources/Watchdog.h"
+
+#include "Resources/Menu/LiquidCrystal.h"
+#include "Resources/Modbus/LpcUart.h"
+
+#include "ring_buffer.h"
 
 #include <atomic>
 #include <cr_section_macros.h>
@@ -31,9 +33,15 @@
 #define I2C_CLK_DIVIDER (1300)
 #define TICKRATE_HZ1 (1000)
 
-static volatile std::atomic_int timeout;
-static volatile std::atomic_int counter;
-RingBuffer *buffer; // initialized before pinInterupt is enabled
+const int ButtonRight = 1;
+const int ButtonMid = 2;
+const int ButtonLeft = 3;
+
+#define debounceTickTime 50
+static volatile std::atomic_uint counter;
+static volatile std::atomic_uint sysTick;
+
+RINGBUFF_T *rBuffer = new RINGBUFF_T;
 
 #ifdef __cplusplus
 extern"C"{
@@ -44,21 +52,32 @@ extern"C"{
 void SysTick_Handler(void){
 	if(counter > 0) --counter;
 
-	if(++timeout == 10000){
-		//	buffer->add(ButtonTimeout);
-	}
+	++sysTick;
+
 }
 void PIN_INT0_IRQHandler(){ // menu Left button
+	volatile static uint32_t prevSysTick = sysTick; // static value initialized on first call
+	if((sysTick -  prevSysTick) > debounceTickTime){
+		RingBuffer_Insert(rBuffer,(void*)&ButtonLeft);
+		prevSysTick = sysTick;
+	}
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(0));
-	buffer->add(ButtonLeft);
 }
 void PIN_INT1_IRQHandler(){ // menu Middle button
+	volatile static uint32_t prevSysTick = sysTick; // static value initialized on first call
+	if((sysTick -  prevSysTick) > debounceTickTime){
+		RingBuffer_Insert(rBuffer,(void*)&ButtonMid);
+		prevSysTick = sysTick;
+	}
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(1));
-	buffer->add(ButtonMid);
 }
 void PIN_INT2_IRQHandler(){ // menu Right button
+	volatile static uint32_t prevSysTick = sysTick; // static value initialized on first call
+	if((sysTick -  prevSysTick) > debounceTickTime){
+		RingBuffer_Insert(rBuffer,(void*)&ButtonRight);
+		prevSysTick = sysTick;
+	}
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(2));
-	buffer->add(ButtonRight);
 }
 #ifdef __cplusplus
 }
@@ -88,14 +107,14 @@ static void initPinIrq(){
 	Chip_INMUX_PinIntSel(0, 0, 0);
 	Chip_INMUX_PinIntSel(1, 0, 9);
 	Chip_INMUX_PinIntSel(2, 0, 10);
-	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 0, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN |IOCON_INV_EN ));
+	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 0, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN |IOCON_INV_EN));
 	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 9, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN |IOCON_INV_EN));
 	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 10, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN|IOCON_INV_EN));
 
 	Chip_PININT_DisableIntHigh(LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
 	Chip_PININT_SetPinModeEdge(LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
-	Chip_PININT_EnableIntLow(LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
+	Chip_PININT_EnableIntLow  (LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
 
 	NVIC_ClearPendingIRQ(PIN_INT0_IRQn);
 	NVIC_EnableIRQ(PIN_INT0_IRQn);
@@ -105,7 +124,11 @@ static void initPinIrq(){
 
 	NVIC_ClearPendingIRQ(PIN_INT2_IRQn);
 	NVIC_EnableIRQ(PIN_INT2_IRQn);
-	Sleep(10);
+
+	// activate once to init static variables
+	PIN_INT0_IRQHandler();
+	PIN_INT1_IRQHandler();
+	PIN_INT2_IRQHandler();
 }
 
 int main(void) {
@@ -146,25 +169,20 @@ int main(void) {
 
 	NVIC_DisableIRQ(I2C0_IRQn);
 
-	LpcPinMap none = {-1, -1}; // unused pin has negative values in it
-	LpcPinMap txpin = { 0, 18 }; // transmit pin that goes to debugger's UART->USB converter
-	LpcPinMap rxpin = { 0, 13 }; // receive pin that goes to debugger's UART->USB converter
-	LpcUartConfig cfg = { LPC_USART0, 115200, UART_CFG_DATALEN_8 | UART_CFG_PARITY_NONE | UART_CFG_STOPLEN_1, false, txpin, rxpin, none, none };
-	LpcUart dbgu(cfg);
-
-
 	ModbusMaster node(2); // Create modbus object that connects to slave id 2
 	node.begin(9600);
-	buffer = new RingBuffer();
+
+	int buffer[20];
+	RingBuffer_Init(rBuffer, buffer, sizeof(int), 20);
 	Fan fan(&node);
 	PressureSensor p;
-	MainController controller(&lcd,&p,&fan,buffer); // Init controller
+	MainController controller(&lcd,&p,&fan,rBuffer); // Init controller
 	initPinIrq();// starts pin interupts
-	Watchdog watchdog(10); //reset time 10 secs
+	Watchdog watchdog(1); //reset time 1 secs
 
 	int updateCounter = 10;
 	while(1) {
-		if(updateCounter++ == 10){
+		if(updateCounter++ == 10){ // updates first, then 10*sleepcounter
 			controller.updateMenu();
 			updateCounter = 0;
 		}
@@ -173,7 +191,7 @@ int main(void) {
 		watchdog.feed();
 	}
 
-	delete buffer; // shouldnt happen
+	delete rBuffer; // shouldnt happen
 	return 0 ;
 }
 

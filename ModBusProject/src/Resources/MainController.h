@@ -10,17 +10,15 @@
 
 #include <string>
 
-#include "LiquidCrystal.h"
-#include "RingBuffer.h"
-#include "LimitedInt.h"
-#include "../Fan.h"
-#include "../PressureSensor.h"
+#include "Menu/LiquidCrystal.h"
+#include "Menu/LimitedInt.h"
 
+#include "ring_buffer.h"
 
-#define ButtonRight 1
-#define ButtonMid 2
-#define ButtonLeft 3
+#include "Fan.h"
+#include "PressureSensor.h"
 
+#define ErrorStateTriggerDist 5
 
 const int MAX_FAN_SPEED = 20000;
 const int MIN_FAN_SPEED = 2000;
@@ -36,7 +34,7 @@ const int PRES_MIN = 0; // pressure lower range
  */
 class MainController {
 public:
-	MainController(LiquidCrystal*,PressureSensor*,Fan*,RingBuffer*);
+	MainController(LiquidCrystal*,PressureSensor*,Fan*,RINGBUFF_T*);
 	virtual ~MainController();
 	void run();
 	void updateMenu();
@@ -48,14 +46,15 @@ private: // updates menu values
 	LiquidCrystal *lcd;
 	PressureSensor *ps;
 	Fan *fan;
-	RingBuffer *buffer;
+	RINGBUFF_T *buffer;
 
 	// Values of sensors
-	int fanFreq = 0; // frequency of fan
+	LimitedInt fanFreq = LimitedInt(0,MIN_FAN_SPEED, MAX_FAN_SPEED); // frequency of fan
 	int paResult; // pressure in pascals
 
 	bool autoMode = true; // controls state
 	bool errorState = false; // true if desired pressure wont be reached
+	int noPressureDiffCounter = 0; // counter for triggering errorstate.
 
 	int step = 200; // initial size of fanspeed increment
 	LimitedInt targetPressure = LimitedInt(20,0,120); // target pascal pressure, range 0-120
