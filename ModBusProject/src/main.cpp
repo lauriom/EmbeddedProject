@@ -194,7 +194,7 @@ int main(void) {
 	PressureSensor pressureSensor;
 	MainController controller(&lcd, &pressureSensor, &fan, rBuffer); //Initialize controller
 	initPinIrq();// starts pin interrupts
-	Watchdog watchdog(1); //reset time 1 sec
+	//Watchdog watchdog(1); //reset time 1 sec
 
 	int updateCounter = 10;
 
@@ -208,7 +208,7 @@ int main(void) {
 
 		controller.run();
 		Sleep(5);
-		watchdog.feed();
+		//watchdog.feed();
 	}
 
 	delete rBuffer; // loop shouldn't reach this point

@@ -7,6 +7,15 @@
 
 #include "MainController.h"
 
+const int ErrorStateTriggerDist = 5;
+const int MIN_FAN_SPEED = 0;
+const int MAX_FAN_SPEED = 20000;
+const int FAN_SPEED_MIN_STEP = 40;
+const int FAN_SPEED_MAX_STEP = 2000;
+const int PRES_DIFF_MIN_STEP = 1; //pressure difference to use min fan speed step at
+const int PRES_DIFF_MAX_STEP = 60; //pressure diff when max fan speed step is used
+const int PRES_MAX = 120; // pressure upper range
+const int PRES_MIN = 0; // pressure lower range
 const int STEP = 5; //for UI, changing percent and pressure
 
 
@@ -98,6 +107,9 @@ void MainController::menuEventHandler() {
 		default:
 			break;
 		}
+
+		targetPressure = clamp(targetPressure, PRES_MIN, PRES_MAX);
+		targetSpeedInPercent = clamp(targetSpeedInPercent, 0, 100);
 	}
 }
 /*
@@ -153,6 +165,7 @@ void MainController::run() {
 			fanFreq -= step;
 		}
 
+		fanFreq = clamp(fanFreq, MIN_FAN_SPEED, MAX_FAN_SPEED);
 		fan->setFrequency(fanFreq);
 	}
 
