@@ -27,7 +27,7 @@ public:
 	int operator+(int const);
 private:
 	int val;
-	int min,max;
+	int min, max;
 };
 
 #endif /* SRC_RESOURCES_MENU_LIMITEDINT_H_ */

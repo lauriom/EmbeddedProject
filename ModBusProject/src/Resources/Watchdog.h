@@ -16,7 +16,4 @@ public:
 
 };
 
-
-
-
 #endif /* SRC_RESOURCES_WATCHDOG_H_ */

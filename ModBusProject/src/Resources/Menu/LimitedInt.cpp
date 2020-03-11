@@ -65,9 +65,10 @@ LimitedInt LimitedInt::operator=(int i){
 }
 
 LimitedInt LimitedInt::operator+=(int i){
-	if((val + i) < max){
+	if((val + i) < max) {
 		val += i;
-	}else{
+	}
+	else {
 		val = max;
 	}
 	return *this;

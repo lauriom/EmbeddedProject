@@ -19,12 +19,9 @@
 #include "Resources/Watchdog.h"
 #include "Resources/Fan.h"
 #include "Resources/PressureSensor.h"
-
 #include "Resources/Menu/LiquidCrystal.h"
 #include "Resources/Modbus/LpcUart.h"
-
 #include "ring_buffer.h"
-
 #include <atomic>
 #include <cr_section_macros.h>
 
@@ -36,8 +33,8 @@
 const int ButtonRight = 1;
 const int ButtonMid = 2;
 const int ButtonLeft = 3;
+const int debounceTickTime = 50;
 
-#define debounceTickTime 50
 static volatile std::atomic_uint counter;
 static volatile std::atomic_uint sysTick;
 
@@ -49,53 +46,73 @@ extern"C"{
  * @brief Handle interrupt from SysTick timer
  * @returnNothing
  * */
-void SysTick_Handler(void){
+void SysTick_Handler() {
+
 	if(counter > 0) --counter;
-
 	++sysTick;
-
 }
-void PIN_INT0_IRQHandler(){ // menu Left button
+
+void PIN_INT0_IRQHandler() { // menu Left button
+
 	volatile static uint32_t prevSysTick = sysTick; // static value initialized on first call
-	if((sysTick -  prevSysTick) > debounceTickTime){
+
+	if((sysTick -  prevSysTick) > debounceTickTime) { //to prevent multiple button presses within a specified time
+
 		RingBuffer_Insert(rBuffer,(void*)&ButtonLeft);
 		prevSysTick = sysTick;
 	}
+
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(0));
 }
-void PIN_INT1_IRQHandler(){ // menu Middle button
+
+void PIN_INT1_IRQHandler() { // menu Middle button
+
 	volatile static uint32_t prevSysTick = sysTick; // static value initialized on first call
-	if((sysTick -  prevSysTick) > debounceTickTime){
+
+	if((sysTick -  prevSysTick) > debounceTickTime) {
+
 		RingBuffer_Insert(rBuffer,(void*)&ButtonMid);
 		prevSysTick = sysTick;
 	}
+
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(1));
 }
-void PIN_INT2_IRQHandler(){ // menu Right button
+
+void PIN_INT2_IRQHandler() { // menu Right button
+
 	volatile static uint32_t prevSysTick = sysTick; // static value initialized on first call
-	if((sysTick -  prevSysTick) > debounceTickTime){
+
+	if((sysTick -  prevSysTick) > debounceTickTime) {
+
 		RingBuffer_Insert(rBuffer,(void*)&ButtonRight);
 		prevSysTick = sysTick;
 	}
+
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(2));
 }
+
 #ifdef __cplusplus
 }
 #endif
-void Sleep(int ms){
+
+void Sleep(int ms) {
+
 	counter = ms;
+
 	while(counter > 0) {
 		__WFI();
 	}
 }
 
-uint32_t millis(){
+uint32_t millis() {
+
 	return counter;
 }
 /**
- * @Brief Fucntion to enable interupts on gpio pins D7,D6 AND D4
+ * @Brief Function to enable interrupts on gpio pins D7, D6 AND D4
  */
-static void initPinIrq(){
+static void initPinIrq() {
+
 	Chip_PININT_Init(LPC_GPIO_PIN_INT);
 
 	Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_PININT);
@@ -140,28 +157,27 @@ int main(void) {
 	// Set up and initialize all required blocks and
 	// functions related to the board hardware
 	Board_Init();
+#endif
+#endif
 
-#endif
-#endif
 	SysTick_Config(Chip_Clock_GetSysTickClockRate() / TICKRATE_HZ1);
-	Chip_RIT_Init(LPC_RITIMER);
+	Chip_RIT_Init(LPC_RITIMER); //RIT needed for LCD
 
-	DigitalIoPin rs = DigitalIoPin(0,8,false,false,false);
-	DigitalIoPin en = DigitalIoPin(1,6,false,false,false);
-	DigitalIoPin d4 = DigitalIoPin(1,8,false,false,false);
-	DigitalIoPin d5 = DigitalIoPin(0,5,false,false,false);
-	DigitalIoPin d6 = DigitalIoPin(0,6,false,false,false);
-	DigitalIoPin d7 = DigitalIoPin(0,7,false,false,false);
+	//Pins for LCD
+	DigitalIoPin rs(0, 8, false, false, false);
+	DigitalIoPin en(1, 6, false, false, false);
+	DigitalIoPin d4(1, 8, false, false, false);
+	DigitalIoPin d5(0, 5, false, false, false);
+	DigitalIoPin d6(0, 6, false, false, false);
+	DigitalIoPin d7(0, 7, false, false, false);
 
 	LiquidCrystal lcd = LiquidCrystal(&rs, &en, &d4, &d5, &d6, &d7);
 
-	//	Init_I2C_PinMux();
+	//To enable I2C
 	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 22, IOCON_DIGMODE_EN |I2C_MODE);
 	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 23, IOCON_DIGMODE_EN |I2C_MODE);
 	Chip_SWM_EnableFixedPin(SWM_FIXED_I2C0_SCL);
 	Chip_SWM_EnableFixedPin(SWM_FIXED_I2C0_SDA);
-
-	//	setupI2CMaster();
 	Chip_I2C_Init(LPC_I2C0);
 	Chip_I2C_SetClockDiv(LPC_I2C0, I2C_CLK_DIVIDER);
 	Chip_I2CM_SetBusSpeed(LPC_I2C0, I2C_BITRATE);
@@ -169,29 +185,33 @@ int main(void) {
 
 	NVIC_DisableIRQ(I2C0_IRQn);
 
-	ModbusMaster node(2); // Create modbus object that connects to slave id 2
+	ModbusMaster node(2); // Modbus object that connects to slave id 2
 	node.begin(9600);
 
 	int buffer[20];
 	RingBuffer_Init(rBuffer, buffer, sizeof(int), 20);
 	Fan fan(&node);
-	PressureSensor p;
-	MainController controller(&lcd,&p,&fan,rBuffer); // Init controller
-	initPinIrq();// starts pin interupts
-	Watchdog watchdog(1); //reset time 1 secs
+	PressureSensor pressureSensor;
+	MainController controller(&lcd, &pressureSensor, &fan, rBuffer); //Initialize controller
+	initPinIrq();// starts pin interrupts
+	Watchdog watchdog(1); //reset time 1 sec
 
 	int updateCounter = 10;
+
 	while(1) {
-		if(updateCounter++ == 10){ // updates first, then 10*sleepcounter
+
+		if(updateCounter++ >= 10) { // updates on every tenth loop
+
 			controller.updateMenu();
 			updateCounter = 0;
 		}
+
 		controller.run();
 		Sleep(5);
 		watchdog.feed();
 	}
 
-	delete rBuffer; // shouldnt happen
-	return 0 ;
+	delete rBuffer; // loop shouldn't reach this point
+	return 0;
 }
 

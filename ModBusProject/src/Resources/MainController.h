@@ -21,7 +21,7 @@
 #define ErrorStateTriggerDist 5
 
 const int MAX_FAN_SPEED = 20000;
-const int MIN_FAN_SPEED = 2000;
+const int MIN_FAN_SPEED = 0;
 const int FAN_SPEED_STEP = 200; //increment/decrement by this speed at a time when controlling the fan
 const int FAN_SPEED_MIN_STEP = 40; //by 1 Hz
 const int FAN_SPEED_MAX_STEP = 5000; //max fan freq is 500 Hz. Max step could be 250 Hz (half)
@@ -42,6 +42,7 @@ private: // updates menu values
 	void menuEventHandler(); // updates on user input
 	int clamp(int val, int min, int max);
 	int remapRange (int val, int iMin, int iMax, int oMin, int oMax);
+
 	// Components of program
 	LiquidCrystal *lcd;
 	PressureSensor *ps;
@@ -56,12 +57,8 @@ private: // updates menu values
 	bool errorState = false; // true if desired pressure wont be reached
 	int noPressureDiffCounter = 0; // counter for triggering errorstate.
 
-	int step = 200; // initial size of fanspeed increment
 	LimitedInt targetPressure = LimitedInt(20,0,120); // target pascal pressure, range 0-120
 	LimitedInt targetSpeedInPercent = LimitedInt(30,0,100);// Manual fan speed in 0-100%
-
-
-
 };
 
 #endif /* SRC_RESOURCES_MENU_MENUCONTROLLER_H_ */
