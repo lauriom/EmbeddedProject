@@ -7,7 +7,7 @@
 
 #include "MainController.h"
 
-const int STEP = 5;
+const int STEP = 5; //for UI, changing percent and pressure
 
 
 MainController::MainController(LiquidCrystal* screen,PressureSensor* psen,Fan* f,RINGBUFF_T* buf):
@@ -133,26 +133,17 @@ void MainController::run() {
 		if(pressureDiff > ErrorStateTriggerDist) {
 
 			if (noPressureDiffCounter++ > 100) {
+
 				errorState = true;// if not near desired pressure in 100 cycles, trigger error
 			}
 		}
+
 		else {
 
 			noPressureDiffCounter = 0;
 		}
-		//DEBUGOUT("Auto mode. Pa result: %d\n", paResult);
 
-		int step = 0;
-
-		if (pressureDiff > (0.25 * PRES_MAX)) {
-
-			step = remapRange(pressureDiff, PRES_DIFF_MIN_STEP, PRES_DIFF_MAX_STEP, FAN_SPEED_MIN_STEP, FAN_SPEED_MAX_STEP);
-		}
-		else {
-
-			step = FAN_SPEED_STEP;
-		}
-		//DEBUGOUT("Step is %d\n", step);
+		int step = remapRange(pressureDiff, PRES_DIFF_MIN_STEP, PRES_DIFF_MAX_STEP, FAN_SPEED_MIN_STEP, FAN_SPEED_MAX_STEP);
 
 		if (paResult < targetPressure) {
 			fanFreq += step;
@@ -170,7 +161,6 @@ void MainController::run() {
 		int targetFrequency = remapRange(targetSpeedInPercent, 0, 100, MIN_FAN_SPEED, MAX_FAN_SPEED);
 		fan->setFrequency(targetFrequency);
 
-		//DEBUGOUT("Manual mode. Pa result: %d\n", paResult);
 	}
 }
 
