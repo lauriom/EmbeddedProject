@@ -54,13 +54,13 @@ void SysTick_Handler() {
 	++sysTick;
 }
 
-void PIN_INT0_IRQHandler() { // menu Left button
+void PIN_INT0_IRQHandler() { // menu Right button
 
 	volatile static uint32_t prevSysTick = sysTick; // static value initialized on first call
 
 	if((sysTick -  prevSysTick) > debounceTickTime) { //to prevent multiple button presses within a specified time
 
-		RingBuffer_Insert(rBuffer,(void*)&ButtonLeft);
+		RingBuffer_Insert(rBuffer,(void*)&ButtonRight);
 		prevSysTick = sysTick;
 	}
 
@@ -80,13 +80,13 @@ void PIN_INT1_IRQHandler() { // menu Middle button
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(1));
 }
 
-void PIN_INT2_IRQHandler() { // menu Right button
+void PIN_INT2_IRQHandler() { // menu Left button
 
 	volatile static uint32_t prevSysTick = sysTick; // static value initialized on first call
 
 	if((sysTick -  prevSysTick) > debounceTickTime) {
 
-		RingBuffer_Insert(rBuffer,(void*)&ButtonRight);
+		RingBuffer_Insert(rBuffer,(void*)&ButtonLeft);
 		prevSysTick = sysTick;
 	}
 
@@ -202,10 +202,10 @@ int main(void) {
 	ModbusMaster node(2); // Modbus object that connects to slave id 2
 	node.begin(9600);
 
-	int buffer[20];
-	RingBuffer_Init(rBuffer, buffer, sizeof(int), 20);
 	Fan fan(&node);
 	PressureSensor pressureSensor;
+	static int buffer[20];
+	RingBuffer_Init(rBuffer, buffer, sizeof(int), 20);
 	MainController controller(&lcd, &pressureSensor, &fan, rBuffer); //Initialize controller
 	initPinIrq();// starts pin interrupts
 	Watchdog watchdog(1); //reset time 1 sec

@@ -119,7 +119,7 @@ int MainController::remapRange (int val, int iMin, int iMax, int oMin, int oMax)
 	float valFraction = float(val - iMin) / float(iMax - iMin); //result between 0 and 1
 
 	return int((oMax - oMin) * valFraction) + oMin; //find where the float would be on the output range
-}
+   }
 
 void MainController::run() {
 
