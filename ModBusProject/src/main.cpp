@@ -30,13 +30,12 @@
 #define I2C_BITRATE (100000)
 #define I2C_CLK_DIVIDER (1300)
 #define TICKRATE_HZ (1000)
-#define TICKRATE_HZL (100)
 
 
 const int ButtonRight = 1;
 const int ButtonMid = 2;
 const int ButtonLeft = 3;
-const int debounceTickTime = 150; // button input discarded if pressed within *val ms
+const int debounceTickTime = 150; // button input discarded if pressed within val ms
 
 static volatile std::atomic_uint counter;
 static volatile std::atomic_uint sysTick;
