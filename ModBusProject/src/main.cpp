@@ -22,18 +22,21 @@
 #include "Resources/Menu/LiquidCrystal.h"
 #include "Resources/Modbus/LpcUart.h"
 #include "ring_buffer.h"
+
 #include <atomic>
 #include <cr_section_macros.h>
 
 #define I2C_MODE (0)
 #define I2C_BITRATE (100000)
 #define I2C_CLK_DIVIDER (1300)
-#define TICKRATE_HZ1 (1000)
+#define TICKRATE_HZ (1000)
+#define TICKRATE_HZL (100)
+
 
 const int ButtonRight = 1;
 const int ButtonMid = 2;
 const int ButtonLeft = 3;
-const int debounceTickTime = 50;
+const int debounceTickTime = 150; // button input discarded if pressed within *val ms
 
 static volatile std::atomic_uint counter;
 static volatile std::atomic_uint sysTick;
@@ -47,7 +50,6 @@ extern"C"{
  * @returnNothing
  * */
 void SysTick_Handler() {
-
 	if(counter > 0) --counter;
 	++sysTick;
 }
@@ -110,6 +112,7 @@ uint32_t millis() {
 }
 /**
  * @Brief Function to enable interrupts on gpio pins D7, D6 AND D4
+ * @Note Initialize ringbuffer before calling
  */
 static void initPinIrq() {
 
@@ -118,21 +121,28 @@ static void initPinIrq() {
 	Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_PININT);
 	Chip_SYSCTL_PeriphReset(RESET_PININT);
 
+	// Conf pin D7
 	Chip_GPIO_SetPinDIRInput(LPC_GPIO, 0, 0);
-	Chip_GPIO_SetPinDIRInput(LPC_GPIO, 0, 9);
-	Chip_GPIO_SetPinDIRInput(LPC_GPIO, 0, 10);
-	Chip_INMUX_PinIntSel(0, 0, 0);
-	Chip_INMUX_PinIntSel(1, 0, 9);
-	Chip_INMUX_PinIntSel(2, 0, 10);
 	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 0, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN |IOCON_INV_EN));
-	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 9, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN |IOCON_INV_EN));
-	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 10, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN|IOCON_INV_EN));
+	Chip_INMUX_PinIntSel(0, 0, 0);
 
-	Chip_PININT_DisableIntHigh(LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
+	// Conf pin D6
+	Chip_GPIO_SetPinDIRInput(LPC_GPIO, 1, 3);
+	Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 3, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN |IOCON_INV_EN));
+	Chip_INMUX_PinIntSel(1, 1, 3);
+
+	// Conf pin D4
+	Chip_GPIO_SetPinDIRInput(LPC_GPIO, 0, 10);
+	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 10, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN|IOCON_INV_EN));
+	Chip_INMUX_PinIntSel(2, 0, 10);
+
+	// Sets interrupt parameters
+	Chip_PININT_DisableIntLow (LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
 	Chip_PININT_SetPinModeEdge(LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
-	Chip_PININT_EnableIntLow  (LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
+	Chip_PININT_EnableIntHigh (LPC_GPIO_PIN_INT, PININTCH(0)| PININTCH(1) | PININTCH(2));
 
+	// Enables interupts for pins
 	NVIC_ClearPendingIRQ(PIN_INT0_IRQn);
 	NVIC_EnableIRQ(PIN_INT0_IRQn);
 
@@ -159,8 +169,12 @@ int main(void) {
 	Board_Init();
 #endif
 #endif
+	if(LPC_WWDT->MOD & 0X4){ // check if watchdog was triggered
+		Board_LED_Toggle(0); // sets red led on pernamently
+	}
 
-	SysTick_Config(Chip_Clock_GetSysTickClockRate() / TICKRATE_HZ1);
+	SysTick_Config(Chip_Clock_GetSysTickClockRate() / TICKRATE_HZ); // 1000 HZ
+
 	Chip_RIT_Init(LPC_RITIMER); //RIT needed for LCD
 
 	//Pins for LCD
@@ -197,11 +211,10 @@ int main(void) {
 	Watchdog watchdog(1); //reset time 1 sec
 
 	int updateCounter = 10;
+	while(1) { //
 
-	while(1) {
-
-		if(updateCounter++ >= 10) { // updates on every tenth loop
-
+		if(++updateCounter >= 10) {
+			// updates on every 10th loop
 			controller.updateMenu();
 			updateCounter = 0;
 		}
@@ -211,7 +224,7 @@ int main(void) {
 		watchdog.feed();
 	}
 
-	delete rBuffer; // loop shouldn't reach this point
+	delete rBuffer; // loop shouldn't reach this point ,
 	return 0;
 }
 
