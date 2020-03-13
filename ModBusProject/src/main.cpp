@@ -55,7 +55,7 @@ void SysTick_Handler() {
 
 void PIN_INT0_IRQHandler() { // menu Right button
 
-	volatile static uint32_t prevSysTick = sysTick; // static value initialized on first call
+	static uint32_t prevSysTick = sysTick; // static value initialized on first call
 
 	if((sysTick -  prevSysTick) > debounceTickTime) { //to prevent multiple button presses within a specified time
 
@@ -68,7 +68,7 @@ void PIN_INT0_IRQHandler() { // menu Right button
 
 void PIN_INT1_IRQHandler() { // menu Middle button
 
-	volatile static uint32_t prevSysTick = sysTick; // static value initialized on first call
+	static uint32_t prevSysTick = sysTick; // static value initialized on first call
 
 	if((sysTick -  prevSysTick) > debounceTickTime) {
 
@@ -81,7 +81,7 @@ void PIN_INT1_IRQHandler() { // menu Middle button
 
 void PIN_INT2_IRQHandler() { // menu Left button
 
-	volatile static uint32_t prevSysTick = sysTick; // static value initialized on first call
+	static uint32_t prevSysTick = sysTick; // static value initialized on first call
 
 	if((sysTick -  prevSysTick) > debounceTickTime) {
 
