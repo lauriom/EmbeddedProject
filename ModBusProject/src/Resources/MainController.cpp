@@ -110,8 +110,8 @@ int MainController::clamp(int val, int min, int max) {
 	return val;
 
 }
-/*
- * input range to output range
+/* 
+ * Converts input to output for modbus
  */
 int MainController::remapRange (int val, int iMin, int iMax, int oMin, int oMax) {
 
@@ -148,8 +148,7 @@ void MainController::run() {
 		if (paResult < targetPressure) {
 			fanFreq += step;
 		}
-
-		if (paResult > targetPressure) {
+		else if (paResult > targetPressure) {
 			fanFreq -= step;
 		}
 
